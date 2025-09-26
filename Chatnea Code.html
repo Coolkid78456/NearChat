@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatnea - Connect with People Around You</title>
+    <script src="https://unpkg.com/peerjs@1.5.0/dist/peerjs.min.js"></script>
+    <style>
+        body {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            margin-bottom: 15px;
+            display: inline-block;
+            animation: logoFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin: 10px 0;
+        }
+
+        .location-setup {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .name-setup {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .name-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .name-input input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            min-width: 200px;
+        }
+
+        .call-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .call-btn {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            min-width: 150px;
+        }
+
+        .voice-call-btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .video-call-btn {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+        }
+
+        .call-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .theme-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .theme-btn {
+            background: rgba(255,255,255,0.9);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+        }
+
+        .theme-btn:hover {
+            transform: scale(1.1);
+            background: white;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .loading-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            animation: bounceIn 0.5s ease-out;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes bounceOut {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0.3); opacity: 0; }
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .upload-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .upload-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 40px 20px;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .location-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .location-input input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            min-width: 200px;
+        }
+
+        .location-input button {
+            padding: 12px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .location-input button:hover {
+            background: #5a6fd8;
+        }
+
+        .location-btn {
+            width: 100%;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+        }
+
+        .location-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .manual-btn {
+            background: none;
+            border: none;
+            color: #667eea;
+            cursor: pointer;
+            text-decoration: underline;
+            font-size: 0.9rem;
+            padding: 5px;
+        }
+
+        .manual-btn:hover {
+            color: #5a6fd8;
+        }
+
+        .location-note {
+            text-align: center;
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.searching {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .chat-area {
+            background: white;
+            border-radius: 15px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .nearby-users {
+            padding: 20px;
+            border-bottom: 1px solid #e1e5e9;
+            background: #f8f9fa;
+        }
+
+        .nearby-users h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+        }
+
+        .user-list {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .user-card {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            border: 2px solid #e1e5e9;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        .user-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .user-card.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+
+        .call-user-btn {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            border: none;
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: none;
+        }
+
+        .user-card:hover .call-user-btn {
+            display: block;
+        }
+
+        .messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .message.own {
+            flex-direction: row-reverse;
+        }
+
+        .message-content {
+            background: #f1f3f4;
+            padding: 12px 16px;
+            border-radius: 18px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+
+        .message.own .message-content {
+            background: #667eea;
+            color: white;
+        }
+
+        .message-input {
+            padding: 20px;
+            border-top: 1px solid #e1e5e9;
+            display: flex;
+            gap: 10px;
+        }
+
+        .message-input input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 25px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .message-input input:focus {
+            border-color: #667eea;
+        }
+
+        .message-input button {
+            padding: 12px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .message-input button:hover {
+            background: #5a6fd8;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #666;
+            padding: 40px 20px;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .call-interface {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #1a1a1a;
+            display: none;
+            z-index: 3000;
+            flex-direction: column;
+        }
+
+        .call-header {
+            padding: 20px;
+            text-align: center;
+            color: white;
+            background: rgba(0,0,0,0.5);
+        }
+
+        .call-status {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+
+        .call-duration {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .video-container {
+            flex: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .remote-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #333;
+        }
+
+        .local-video {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 200px;
+            height: 150px;
+            border-radius: 10px;
+            object-fit: cover;
+            border: 2px solid white;
+            background: #333;
+        }
+
+        .call-controls {
+            padding: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            background: rgba(0,0,0,0.7);
+        }
+
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-size: 1.5rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn.mute {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .control-btn.mute.active {
+            background: #f44336;
+        }
+
+        .control-btn.camera {
+            background: #2196F3;
+            color: white;
+        }
+
+        .control-btn.camera.active {
+            background: #f44336;
+        }
+
+        .control-btn.hangup {
+            background: #f44336;
+            color: white;
+        }
+
+        .control-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .audio-call {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .audio-call .video-container {
+            flex-direction: column;
+            justify-content: center;
+            text-align: center;
+            color: white;
+        }
+
+        .audio-avatar {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            margin-bottom: 20px;
+            border: 4px solid rgba(255,255,255,0.3);
+        }
+
+        .connection-status {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .location-input {
+                flex-direction: column;
+            }
+            
+            .location-input input,
+            .location-input button {
+                width: 100%;
+            }
+
+            .local-video {
+                width: 120px;
+                height: 90px;
+                top: 10px;
+                right: 10px;
+            }
+
+            .call-controls {
+                padding: 20px;
+                gap: 15px;
+            }
+
+            .control-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Theme Controls -->
+    <div class="theme-controls">
+        <button class="theme-btn" onclick="openThemeUpload()" title="Change Background">📷</button>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content" id="loadingContent">
+            <div class="loading-spinner"></div>
+            <h3 id="loadingText">Connecting to call...</h3>
+            <p>Please wait while we set up your connection</p>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div class="upload-modal" id="uploadModal">
+        <div class="upload-content">
+            <h3>Change Background Theme</h3>
+            <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                <p>📷 Click here or drag & drop an image</p>
+                <p style="font-size: 0.9rem; color: #666;">Supports JPG, PNG, GIF</p>
+            </div>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+            <div style="margin-top: 20px;">
+                <button onclick="closeUploadModal()" style="padding: 10px 20px; margin-right: 10px; background: #ccc; border: none; border-radius: 5px; cursor: pointer;">Cancel</button>
+                <button onclick="resetBackground()" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">Reset to Default</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call Interface -->
+    <div class="call-interface" id="callInterface">
+        <div class="call-header">
+            <div class="call-status" id="callStatus">Connecting...</div>
+            <div class="call-duration" id="callDuration">00:00</div>
+        </div>
+        <div class="video-container" id="videoContainer">
+            <video id="remoteVideo" class="remote-video" autoplay playsinline></video>
+            <video id="localVideo" class="local-video" autoplay muted playsinline></video>
+            <div class="connection-status" id="connectionStatus">Connecting to call...</div>
+        </div>
+        <div class="call-controls">
+            <button class="control-btn mute" id="muteBtn" onclick="toggleMute()">🎤</button>
+            <button class="control-btn camera" id="cameraBtn" onclick="toggleCamera()">📹</button>
+            <button class="control-btn hangup" onclick="endCall()">📞</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#4facfe;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#00f2fe;stop-opacity:1" />
+                        </linearGradient>
+                        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="rgba(0,0,0,0.3)"/>
+                        </filter>
+                    </defs>
+                    
+                    <circle cx="40" cy="40" r="35" fill="url(#logoGradient)" filter="url(#shadow)"/>
+                    <path d="M40 15 C32 15 26 21 26 29 C26 37 40 50 40 50 S54 37 54 29 C54 21 48 15 40 15 Z" fill="white" opacity="0.9"/>
+                    <circle cx="40" cy="29" r="6" fill="#667eea"/>
+                    <ellipse cx="28" cy="55" rx="8" ry="6" fill="white" opacity="0.9"/>
+                    <ellipse cx="52" cy="58" rx="10" ry="7" fill="white" opacity="0.8"/>
+                    <circle cx="25" cy="35" r="2" fill="white" opacity="0.7"/>
+                    <circle cx="55" cy="32" r="2" fill="white" opacity="0.7"/>
+                    <circle cx="35" cy="65" r="2" fill="white" opacity="0.7"/>
+                    <line x1="27" y1="36" x2="38" y2="42" stroke="white" stroke-width="1" opacity="0.5"/>
+                    <line x1="53" y1="34" x2="42" y2="40" stroke="white" stroke-width="1" opacity="0.5"/>
+                    <line x1="37" y1="63" x2="42" y2="52" stroke="white" stroke-width="1" opacity="0.5"/>
+                </svg>
+            </div>
+            <h1>Chatnea</h1>
+            <p>Connect and chat with people in your area</p>
+        </div>
+
+        <div class="name-setup" id="nameSetup">
+            <h3 style="margin-bottom: 15px; color: #333;">👋 What's your name?</h3>
+            <div class="name-input">
+                <input type="text" id="nameInput" placeholder="Enter your real name (e.g., John Smith)" />
+                <button onclick="setUserName()" class="location-btn" style="width: auto;">Continue</button>
+            </div>
+            <p style="font-size: 0.9rem; color: #666; margin: 10px 0;">Your real name helps others recognize you when chatting nearby.</p>
+        </div>
+
+        <div class="location-setup" id="locationSetup" style="display: none;">
+            <div class="location-input">
+                <button onclick="requestLocation()" id="locationBtn" class="location-btn">📍 Share My Location</button>
+                <div class="manual-location" style="display: none;">
+                    <input type="text" id="locationInput" placeholder="Or enter your city manually" />
+                    <button onclick="connectManually()">Connect</button>
+                </div>
+            </div>
+            <div class="call-buttons">
+                <button onclick="startVoiceCall()" class="call-btn voice-call-btn">📞 Call People Nearby</button>
+                <button onclick="startVideoCall()" class="call-btn video-call-btn">📹 Video Call Nearby</button>
+            </div>
+            <div id="statusMessage" class="status searching" style="display: none;">
+                📍 Getting your location...
+            </div>
+            <div class="location-note">
+                <p style="font-size: 0.9rem; color: #666; margin: 10px 0;">We need your location to find people nearby. Your exact location is never shared with other users.</p>
+                <button onclick="showManualInput()" class="manual-btn">Enter location manually instead</button>
+            </div>
+        </div>
+
+        <div class="chat-area">
+            <div class="nearby-users">
+                <h3>👥 People Nearby</h3>
+                <div class="user-list" id="userList">
+                    <div class="empty-state">
+                        <p>Enter your location above to find people nearby!</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="messages" id="messages">
+                <div class="empty-state">
+                    <h3>💬 Start Chatting</h3>
+                    <p>Select someone from the nearby users to start a conversation</p>
+                </div>
+            </div>
+
+            <div class="message-input">
+                <input type="text" id="messageInput" placeholder="Type your message..." disabled />
+                <button onclick="sendMessage()" id="sendButton" disabled>Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let userLocation = null;
+        let activeChat = null;
+        let messages = {};
+        let nearbyUsers = [];
+        let allUsers = JSON.parse(localStorage.getItem('chatneaUsers') || '[]');
+        let currentCallType = null;
+        let peer = null;
+        let localStream = null;
+        let currentCall = null;
+        let callStartTime = null;
+        let callTimer = null;
+        let isMuted = false;
+        let isCameraOff = false;
+
+        // Bad words filter
+        const badWords = ['damn', 'hell', 'stupid', 'idiot', 'hate', 'kill', 'die', 'ugly', 'fat', 'loser'];
+
+        function filterBadWords(text) {
+            let filtered = text;
+            badWords.forEach(word => {
+                const regex = new RegExp(word, 'gi');
+                filtered = filtered.replace(regex, '*'.repeat(word.length));
+            });
+            return filtered;
+        }
+
+        function generateUserId() {
+            return 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function initializePeer() {
+            if (peer) return;
+            
+            peer = new Peer({
+                host: 'peerjs-server.herokuapp.com',
+                port: 443,
+                secure: true,
+                debug: 2
+            });
+
+            peer.on('open', function(id) {
+                console.log('My peer ID is: ' + id);
+                currentUser.peerId = id;
+            });
+
+            peer.on('call', function(call) {
+                handleIncomingCall(call);
+            });
+
+            peer.on('error', function(err) {
+                console.error('PeerJS error:', err);
+                alert('Connection error. Please try again.');
+            });
+        }
+
+        function setUserName() {
+            const name = document.getElementById('nameInput').value.trim();
+            if (!name) {
+                alert('Please enter your name first!');
+                return;
+            }
+            
+            localStorage.setItem('chatneaUserName', name);
+            initializePeer();
+            
+            document.getElementById('nameSetup').style.display = 'none';
+            document.getElementById('locationSetup').style.display = 'block';
+        }
+
+        function createUserProfile(location) {
+            const storedName = localStorage.getItem('chatneaUserName') || 'Anonymous';
+            
+            currentUser = {
+                id: generateUserId(),
+                name: storedName,
+                avatar: storedName.charAt(0).toUpperCase(),
+                location: location,
+                lastSeen: new Date(),
+                isOnline: true,
+                peerId: null
+            };
+            
+            allUsers = allUsers.filter(user => user.id !== currentUser.id);
+            allUsers.push(currentUser);
+            localStorage.setItem('chatneaUsers', JSON.stringify(allUsers));
+            
+            return currentUser;
+        }
+
+        async function startVoiceCall() {
+            currentCallType = 'voice';
+            showLoadingScreen('Getting microphone access...');
+            
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                hideLoadingScreen();
+                showCallInterface(false);
+                document.getElementById('callStatus').textContent = 'Ready for voice calls';
+                document.getElementById('connectionStatus').innerHTML = `
+                    <div class="audio-avatar">${currentUser.avatar}</div>
+                    <h2>Voice Call Ready</h2>
+                    <p>Click on a user to start calling</p>
+                `;
+            } catch (err) {
+                hideLoadingScreen();
+                console.error('Microphone access denied:', err);
+                alert('❌ Microphone access denied. Please allow microphone access to use voice calling.');
+            }
+        }
+
+        async function startVideoCall() {
+            currentCallType = 'video';
+            showLoadingScreen('Getting camera and microphone access...');
+            
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                hideLoadingScreen();
+                showCallInterface(true);
+                document.getElementById('localVideo').srcObject = localStream;
+                document.getElementById('callStatus').textContent = 'Ready for video calls';
+                document.getElementById('connectionStatus').innerHTML = `
+                    <h2>Video Call Ready</h2>
+                    <p>Click on a user to start calling</p>
+                `;
+            } catch (err) {
+                hideLoadingScreen();
+                console.error('Camera/microphone access denied:', err);
+                alert('❌ Camera or microphone access denied. Please allow camera and microphone access to use video calling.');
+            }
+        }
+
+        function showCallInterface(isVideo) {
+            const callInterface = document.getElementById('callInterface');
+            const videoContainer = document.getElementById('videoContainer');
+            
+            callInterface.style.display = 'flex';
+            
+            if (!isVideo) {
+                callInterface.classList.add('audio-call');
+                document.getElementById('localVideo').style.display = 'none';
+                document.getElementById('remoteVideo').style.display = 'none';
+                document.getElementById('cameraBtn').style.display = 'none';
+            } else {
+                callInterface.classList.remove('audio-call');
+                document.getElementById('localVideo').style.display = 'block';
+                document.getElementById('remoteVideo').style.display = 'block';
+                document.getElementById('cameraBtn').style.display = 'flex';
+            }
+        }
+
+        function callUser(userId) {
+            if (!peer || !localStream) {
+                alert('Please start a call session first using the call buttons above.');
+                return;
+            }
+
+            const user = nearbyUsers.find(u => u.id === userId);
+            if (!user || !user.peerId) {
+                alert('User is not available for calls right now.');
+                return;
+            }
+
+            document.getElementById('callStatus').textContent = `Calling ${user.name}...`;
+            document.getElementById('connectionStatus').textContent = 'Connecting...';
+            
+            currentCall = peer.call(user.peerId, localStream);
+            
+            currentCall.on('stream', function(remoteStream) {
+                document.getElementById('remoteVideo').srcObject = remoteStream;
+                document.getElementById('callStatus').textContent = `Connected with ${user.name}`;
+                document.getElementById('connectionStatus').style.display = 'none';
+                startCallTimer();
+            });
+
+            currentCall.on('close', function() {
+                endCall();
+            });
+
+            currentCall.on('error', function(err) {
+                console.error('Call error:', err);
+                alert('Call failed. The user might not be available.');
+                endCall();
+            });
+        }
+
+        function handleIncomingCall(call) {
+            const callerName = 'Someone nearby';
+            
+            if (confirm(`${callerName} is calling you. Accept?`)) {
+                if (!localStream) {
+                    navigator.mediaDevices.getUserMedia({ 
+                        video: currentCallType === 'video', 
+                        audio: true 
+                    }).then(stream => {
+                        localStream = stream;
+                        answerCall(call);
+                    }).catch(err => {
+                        console.error('Failed to get media:', err);
+                        call.close();
+                    });
+                } else {
+                    answerCall(call);
+                }
+            } else {
+                call.close();
+            }
+        }
+
+        function answerCall(call) {
+            currentCall = call;
+            call.answer(localStream);
+            
+            showCallInterface(currentCallType === 'video');
+            if (currentCallType === 'video') {
+                document.getElementById('localVideo').srcObject = localStream;
+            }
+            
+            call.on('stream', function(remoteStream) {
+                document.getElementById('remoteVideo').srcObject = remoteStream;
+                document.getElementById('callStatus').textContent = 'Connected';
+                document.getElementById('connectionStatus').style.display = 'none';
+                startCallTimer();
+            });
+
+            call.on('close', function() {
+                endCall();
+            });
+        }
+
+        function startCallTimer() {
+            callStartTime = Date.now();
+            callTimer = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                document.getElementById('callDuration').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function toggleMute() {
+            if (!localStream) return;
+            
+            isMuted = !isMuted;
+            localStream.getAudioTracks().forEach(track => {
+                track.enabled = !isMuted;
+            });
+            
+            const muteBtn = document.getElementById('muteBtn');
+            if (isMuted) {
+                muteBtn.classList.add('active');
+                muteBtn.textContent = '🔇';
+            } else {
+                muteBtn.classList.remove('active');
+                muteBtn.textContent = '🎤';
+            }
+        }
+
+        function toggleCamera() {
+            if (!localStream || currentCallType !== 'video') return;
+            
+            isCameraOff = !isCameraOff;
+            localStream.getVideoTracks().forEach(track => {
+                track.enabled = !isCameraOff;
+            });
+            
+            const cameraBtn = document.getElementById('cameraBtn');
+            if (isCameraOff) {
+                cameraBtn.classList.add('active');
+                cameraBtn.textContent = '📷';
+            } else {
+                cameraBtn.classList.remove('active');
+                cameraBtn.textContent = '📹';
+            }
+        }
+
+        function endCall() {
+            if (currentCall) {
+                currentCall.close();
+                currentCall = null;
+            }
+            
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            
+            if (callTimer) {
+                clearInterval(callTimer);
+                callTimer = null;
+            }
+            
+            document.getElementById('callInterface').style.display = 'none';
+            document.getElementById('localVideo').srcObject = null;
+            document.getElementById('remoteVideo').srcObject = null;
+            document.getElementById('connectionStatus').style.display = 'block';
+            
+            // Reset button states
+            document.getElementById('muteBtn').classList.remove('active');
+            document.getElementById('muteBtn').textContent = '🎤';
+            document.getElementById('cameraBtn').classList.remove('active');
+            document.getElementById('cameraBtn').textContent = '📹';
+            isMuted = false;
+            isCameraOff = false;
+        }
+
+        function showLoadingScreen(text) {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoadingScreen() {
+            const overlay = document.getElementById('loadingOverlay');
+            const content = document.getElementById('loadingContent');
+            
+            content.style.animation = 'bounceOut 0.5s ease-in';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                content.style.animation = 'bounceIn 0.5s ease-out';
+            }, 500);
+        }
+
+        function openThemeUpload() {
+            document.getElementById('uploadModal').style.display = 'flex';
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModal').style.display = 'none';
+        }
+
+        function resetBackground() {
+            document.body.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            localStorage.removeItem('chatneaCustomBackground');
+            closeUploadModal();
+        }
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleImageUpload(file);
+            }
+        });
+
+        const uploadArea = document.getElementById('uploadArea');
+        
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleImageUpload(files[0]);
+            }
+        });
+
+        function handleImageUpload(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file (JPG, PNG, GIF)');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imageUrl = e.target.result;
+                document.body.style.background = `url('${imageUrl}') center/cover no-repeat`;
+                localStorage.setItem('chatneaCustomBackground', imageUrl);
+                closeUploadModal();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        window.addEventListener('load', function() {
+            const customBg = localStorage.getItem('chatneaCustomBackground');
+            if (customBg) {
+                document.body.style.background = `url('${customBg}') center/cover no-repeat`;
+            }
+            
+            const storedName = localStorage.getItem('chatneaUserName');
+            if (storedName) {
+                document.getElementById('nameInput').value = storedName;
+            }
+        });
+
+        function requestLocation() {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.style.display = 'block';
+            statusEl.className = 'status searching';
+            statusEl.innerHTML = '📍 Getting your location...';
+
+            setTimeout(() => {
+                showManualInput();
+                statusEl.innerHTML = '📍 Enter your city or area below to find people nearby';
+            }, 2000);
+
+            if (!navigator.geolocation) {
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    const locationName = `Area_${Math.abs(Math.round(lat))}_${Math.abs(Math.round(lng))}`;
+                    connectToArea(locationName);
+                },
+                (error) => {
+                    console.log('Location access denied or unavailable - using manual input');
+                },
+                {
+                    enableHighAccuracy: false,
+                    timeout: 5000,
+                    maximumAge: 600000
+                }
+            );
+        }
+
+        function showManualInput() {
+            document.querySelector('.manual-location').style.display = 'flex';
+            document.querySelector('.location-note').style.display = 'none';
+            document.getElementById('locationBtn').style.display = 'none';
+        }
+
+        function connectManually() {
+            const location = document.getElementById('locationInput').value.trim();
+            if (!location) {
+                alert('Please enter a location first!');
+                return;
+            }
+            connectToArea(location);
+        }
+
+        function connectToArea(location) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.style.display = 'block';
+            statusEl.className = 'status searching';
+            statusEl.innerHTML = '📍 Searching for people in your area...';
+
+            createUserProfile(location);
+
+            setTimeout(() => {
+                findNearbyUsers(location);
+                statusEl.className = 'status connected';
+                statusEl.innerHTML = `✅ Connected to ${location} area`;
+            }, 1500);
+        }
+
+        function findNearbyUsers(location) {
+            const demoUsers = [
+                {
+                    id: 'sarah_' + location.replace(/\s+/g, '_'),
+                    name: 'Sarah Johnson',
+                    avatar: 'S',
+                    location: location,
+                    lastSeen: new Date(),
+                    isOnline: true,
+                    peerId: 'sarah_peer_' + Math.random().toString(36).substr(2, 9)
+                },
+                {
+                    id: 'mike_' + location.replace(/\s+/g, '_'),
+                    name: 'Mike Chen',
+                    avatar: 'M',
+                    location: location,
+                    lastSeen: new Date(),
+                    isOnline: true,
+                    peerId: 'mike_peer_' + Math.random().toString(36).substr(2, 9)
+                },
+                {
+                    id: 'emma_' + location.replace(/\s+/g, '_'),
+                    name: 'Emma Davis',
+                    avatar: 'E',
+                    location: location,
+                    lastSeen: new Date(),
+                    isOnline: true,
+                    peerId: 'emma_peer_' + Math.random().toString(36).substr(2, 9)
+                }
+            ];
+            
+            nearbyUsers = demoUsers;
+            displayNearbyUsers();
+        }
+
+        function displayNearbyUsers() {
+            const userList = document.getElementById('userList');
+            userList.innerHTML = '';
+
+            if (nearbyUsers.length === 0) {
+                userList.innerHTML = `
+                    <div class="empty-state">
+                        <h3>🔍 Looking for people nearby...</h3>
+                        <p>No one else is online in your area right now. Try again in a few minutes!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            nearbyUsers.forEach(user => {
+                const userCard = document.createElement('div');
+                userCard.className = 'user-card';
+                userCard.onclick = () => startChat(user);
+                
+                const timeDiff = Math.floor((new Date() - new Date(user.lastSeen)) / 60000);
+                const lastSeenText = timeDiff < 1 ? 'Just now' : `${timeDiff} min ago`;
+                
+                userCard.innerHTML = `
+                    <div class="user-avatar">${user.avatar}</div>
+                    <div>
+                        <div style="font-weight: 600;">${user.name}</div>
+                        <div style="font-size: 0.8rem; color: #666;">🟢 ${lastSeenText}</div>
+                    </div>
+                    <button class="call-user-btn" onclick="event.stopPropagation(); callUser('${user.id}')" title="Call ${user.name}">📞</button>
+                `;
+                
+                userList.appendChild(userCard);
+            });
+        }
+
+        function startChat(user) {
+            activeChat = user;
+            
+            document.querySelectorAll('.user-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            document.getElementById('messageInput').disabled = false;
+            document.getElementById('sendButton').disabled = false;
+            document.getElementById('messageInput').placeholder = `Message ${user.name}...`;
+            
+            if (!messages[user.id]) {
+                messages[user.id] = [];
+            }
+            
+            displayMessages();
+        }
+
+        function displayMessages() {
+            const messagesEl = document.getElementById('messages');
+            messagesEl.innerHTML = '';
+            
+            const chatKey = `chatnea_chat_${[currentUser.id, activeChat.id].sort().join('_')}`;
+            const storedMessages = JSON.parse(localStorage.getItem(chatKey) || '[]');
+            messages[activeChat.id] = storedMessages;
+            
+            if (!activeChat || !messages[activeChat.id] || messages[activeChat.id].length === 0) {
+                messagesEl.innerHTML = `
+                    <div class="empty-state">
+                        <h3>💬 Chat with ${activeChat ? activeChat.name : 'someone'}</h3>
+                        <p>Start the conversation by sending a message below!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            messages[activeChat.id].forEach(msg => {
+                const messageEl = document.createElement('div');
+                const isOwnMessage = msg.senderId === currentUser.id;
+                messageEl.className = `message ${isOwnMessage ? 'own' : ''}`;
+                
+                const avatar = isOwnMessage ? currentUser.avatar : activeChat.avatar;
+                messageEl.innerHTML = `
+                    <div class="user-avatar">${avatar}</div>
+                    <div class="message-content">${msg.content}</div>
+                `;
+                
+                messagesEl.appendChild(messageEl);
+            });
+            
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const content = input.value.trim();
+            
+            if (!content || !activeChat) return;
+            
+            // Filter bad words
+            const filteredContent = filterBadWords(content);
+            
+            if (!messages[activeChat.id]) {
+                messages[activeChat.id] = [];
+            }
+            
+            const userMessage = {
+                sender: currentUser.name,
+                senderId: currentUser.id,
+                content: filteredContent,
+                timestamp: new Date().toISOString()
+            };
+            
+            messages[activeChat.id].push(userMessage);
+            
+            const chatKey = `chatnea_chat_${[currentUser.id, activeChat.id].sort().join('_')}`;
+            const existingChat = JSON.parse(localStorage.getItem(chatKey) || '[]');
+            existingChat.push(userMessage);
+            localStorage.setItem(chatKey, JSON.stringify(existingChat));
+            
+            input.value = '';
+            displayMessages();
+            
+            setTimeout(() => {
+                const replies = [
+                    "Hey! Nice to meet you! 👋",
+                    "Hello there! How's your day going?",
+                    "Hi! Great to connect with someone nearby!",
+                    "Hey! This area is pretty nice, isn't it?",
+                    "Hello! Are you from around here?",
+                    "Hi there! Love meeting new people! 😊",
+                    "Hey! Welcome to Chatnea! This is cool!",
+                    "Hello! Nice to chat with locals!"
+                ];
+                
+                const randomReply = replies[Math.floor(Math.random() * replies.length)];
+                
+                const botReply = {
+                    sender: activeChat.name,
+                    senderId: activeChat.id,
+                    content: randomReply,
+                    timestamp: new Date().toISOString()
+                };
+                
+                messages[activeChat.id].push(botReply);
+                
+                const updatedChat = JSON.parse(localStorage.getItem(chatKey) || '[]');
+                updatedChat.push(botReply);
+                localStorage.setItem(chatKey, JSON.stringify(updatedChat));
+                
+                displayMessages();
+            }, 1500);
+        }
+
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        document.getElementById('locationInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                connectManually();
+            }
+        });
+
+        document.getElementById('nameInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                setUserName();
+            }
+        });
+
+        window.addEventListener('beforeunload', function() {
+            if (currentCall) {
+                currentCall.close();
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            if (peer) {
+                peer.destroy();
+            }
+            
+            if (currentUser) {
+                currentUser.isOnline = false;
+                const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
+                if (userIndex !== -1) {
+                    allUsers[userIndex] = currentUser;
+                    localStorage.setItem('chatneaUsers', JSON.stringify(allUsers));
+                }
+            }
+        });
+
+        setInterval(() => {
+            if (currentUser && currentUser.location) {
+                findNearbyUsers(currentUser.location);
+            }
+        }, 30000);
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9852a727f5536b50',t:'MTc1ODg4ODU3Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
